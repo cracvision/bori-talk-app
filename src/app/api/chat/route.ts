@@ -8,10 +8,10 @@ export async function POST(req: Request) {
   const { threadId, message } = await req.json();
   await openai.beta.threads.messages.create(threadId, { role: "user", content: message });
   const run = await openai.beta.threads.runs.create(threadId, { assistant_id: assistantId });
-  let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+  let runStatus = await openai.beta.threads.runs.retrieve(threadId, { run_id: run.id });
   while (runStatus.status !== "completed") {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+    runStatus = await openai.beta.threads.runs.retrieve(threadId, { run_id: run.id });
   }
   const messages = await openai.beta.threads.messages.list(threadId);
   const response = messages.data[0].content[0].type === "text" ? messages.data[0].content[0].text.value : "";

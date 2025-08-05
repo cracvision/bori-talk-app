@@ -13,13 +13,23 @@ export default function Home() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const expirationMinutes = parseInt(process.env.NEXT_PUBLIC_CHAT_EXPIRATION_MINUTES || "10");
 
+  const saveTranscript = useCallback(async () => {
+    if (!sessionId) return;
+    const transcript = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+    await fetch("/api/save-transcript", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, transcript }),
+    });
+  }, [sessionId, messages]);
+
   const startTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       setIsExpired(true);
       saveTranscript();
     }, expirationMinutes * 60 * 1000);
-  }, [expirationMinutes]); // Dependencias estables
+  }, [expirationMinutes, saveTranscript]);
 
   useEffect(() => {
     const newSessionId = uuidv4();
@@ -64,16 +74,6 @@ export default function Home() {
     const audioBlob = await res.blob();
     const audio = new Audio(URL.createObjectURL(audioBlob));
     audio.play();
-  };
-
-  const saveTranscript = async () => {
-    if (!sessionId) return;
-    const transcript = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
-    await fetch("/api/save-transcript", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, transcript }),
-    });
   };
 
   return (
