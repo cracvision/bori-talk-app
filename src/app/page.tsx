@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 export default function Home() {
@@ -13,12 +13,20 @@ export default function Home() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const expirationMinutes = parseInt(process.env.NEXT_PUBLIC_CHAT_EXPIRATION_MINUTES || "10");
 
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setIsExpired(true);
+      saveTranscript();
+    }, expirationMinutes * 60 * 1000);
+  }, [expirationMinutes]); // Dependencias estables
+
   useEffect(() => {
     const newSessionId = uuidv4();
     setSessionId(newSessionId);
     startTimer();
     createThread(newSessionId);
-  }, [startTimer]); // Añadido startTimer a las dependencias
+  }, [startTimer]);
 
   const createThread = async (sid: string) => {
     const res = await fetch("/api/create-thread", {
@@ -28,14 +36,6 @@ export default function Home() {
     });
     const { threadId } = await res.json();
     setThreadId(threadId);
-  };
-
-  const startTimer = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      setIsExpired(true);
-      saveTranscript();
-    }, expirationMinutes * 60 * 1000);
   };
 
   const handleSend = async () => {
