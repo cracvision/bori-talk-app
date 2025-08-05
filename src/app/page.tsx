@@ -17,9 +17,8 @@ export default function Home() {
     const newSessionId = uuidv4();
     setSessionId(newSessionId);
     startTimer();
-    // Create OpenAI thread on load
     createThread(newSessionId);
-  }, []);
+  }, [startTimer]); // Añadido startTimer a las dependencias
 
   const createThread = async (sid: string) => {
     const res = await fetch("/api/create-thread", {
@@ -35,13 +34,13 @@ export default function Home() {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       setIsExpired(true);
-      saveTranscript(); // Save on expiration
+      saveTranscript();
     }, expirationMinutes * 60 * 1000);
   };
 
   const handleSend = async () => {
     if (!input || isExpired || !threadId) return;
-    startTimer(); // Reset timer on interaction
+    startTimer();
     setMessages((prev) => [...prev, { role: "user", content: input }]);
     setInput("");
     setIsLoading(true);
